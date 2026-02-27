@@ -1,0 +1,180 @@
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .eval-option {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .eval-option input[type="radio"] {
+            margin-right: 0.5rem;
+        }
+
+        .eval-option label {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border: 2px solid var(--gray-300);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .eval-option input[type="radio"]:checked + label {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+
+        .eval-option.adequate input[type="radio"]:checked + label {
+            border-color: var(--success);
+            background: #f0fdf4;
+        }
+
+        .eval-option.inadequate input[type="radio"]:checked + label {
+            border-color: var(--warning);
+            background: #fffbeb;
+        }
+
+        .eval-option.missing input[type="radio"]:checked + label {
+            border-color: var(--danger);
+            background: #fef2f2;
+        }
+
+        .eval-details {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 2px solid var(--gray-200);
+        }
+
+        .eval-field {
+            margin-bottom: 1rem;
+        }
+
+        .eval-field label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--gray-700);
+        }
+
+        .eval-field input[type="text"],
+        .eval-field input[type="date"],
+        .eval-field textarea,
+        .eval-field select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--gray-300);
+            border-radius: 0.375rem;
+            font-family: inherit;
+            font-size: 0.875rem;
+        }
+
+        .eval-field textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .eval-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        /* Facilitator Guide */
+        .facilitator-guide {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 3px solid var(--warning);
+            border-radius: 0.75rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .facilitator-badge {
+            display: inline-block;
+            background: var(--warning);
+            color: var(--gray-900);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 700;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+        }
+
+        .facilitator-section {
+            margin-bottom: 2rem;
+        }
+
+        .facilitator-section h4 {
+            color: var(--gray-900);
+            font-size: 1.125rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .facilitator-section ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .facilitator-section li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .facilitator-section li::before {
+            content: '▸';
+            position: absolute;
+            left: 0;
+            color: var(--warning);
+            font-weight: 700;
+        }
+
+        .script-box {
+            background: white;
+            border-left: 4px solid var(--warning);
+            padding: 1rem;
+            border-radius: 0.375rem;
+            font-style: italic;
+            line-height: 1.8;
+            margin: 0.75rem 0;
+        }
+
+        .troubleshooting-item {
+            background: white;
+            padding: 1rem;
+            border-radius: 0.375rem;
+            margin-bottom: 0.75rem;
+            border-left: 4px solid var(--danger);
+        }
+
+        .troubleshooting-issue {
+            font-weight: 600;
+            color: var(--danger);
+            margin-bottom: 0.5rem;
+        }
+
+        .troubleshooting-solution {
+            color: var(--gray-700);
+            line-height: 1.6;
+        }
+
+        /* Facilitator Notes in Injects */
+        .facilitator-notes {
+            background: #fffbeb;
+            border: 2px solid var(--warning);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .facilitator-notes-header {
+            display: flex;
+            align-items: center;

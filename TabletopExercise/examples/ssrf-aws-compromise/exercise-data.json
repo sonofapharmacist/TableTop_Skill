@@ -1,0 +1,139 @@
+{
+  "title": "SSRF Leads to AWS Compromise",
+  "subtitle": "Server-Side Request Forgery vulnerability leading to EC2 metadata exposure and credential theft",
+  "scenarioType": "Technical - Cloud Security",
+  "targetAudience": "SOC Analysts, DevOps, Cloud Security, Incident Response",
+  "duration": "2 hours",
+  "difficulty": "Intermediate",
+  "severity": "CRITICAL",
+  "preparedBy": "Arcanum Information Security",
+  "date": "February 27, 2026",
+  "version": "1.0",
+
+  "executiveSummary": "This tabletop exercise simulates a critical security incident where a threat actor exploits a Server-Side Request Forgery (SSRF) vulnerability in the organization's web application to access the AWS EC2 instance metadata service. The attacker successfully steals temporary IAM role credentials and uses them to access sensitive S3 buckets containing customer data. The scenario tests the organization's ability to detect SSRF vulnerabilities, respond to AWS credential compromise, and implement proper cloud security controls.",
+
+  "attackVector": "SSRF in product price lookup API allows unrestricted HTTP requests to EC2 metadata service",
+  "potentialImpact": "Credential theft, S3 data exfiltration, lateral movement, potential ransomware",
+  "testingGoals": "Validate SSRF response procedures, test AWS credential rotation, assess cloud monitoring effectiveness",
+  "criticalGaps": "Missing SSRF playbook, no IMDSv2 enforcement, limited cloud logging",
+
+  "scenarioOverview": "Your organization runs a Flask-based e-commerce platform on AWS EC2. The application includes a product price lookup feature that fetches pricing from external APIs. A developer introduced an SSRF vulnerability by using user-supplied input in requests.get() without validation. An attacker discovers this and uses it to access the EC2 metadata service at 169.254.169.254, stealing IAM role credentials. With these credentials, the attacker accesses S3 buckets and exfiltrates customer data.",
+
+  "facilitatorGuide": {
+    "preparation": {
+      "timeline": "Begin preparation 1 week before exercise",
+      "tasks": [
+        "Book conference room",
+        "Send calendar invites to participants",
+        "Print scenario materials",
+        "Set up timer for exercise"
+      ],
+      "materialsNeeded": [
+        "Facilitator guide",
+        "Whiteboard for action items",
+        "Timer visible to participants"
+      ],
+      "roomSetup": [
+        "Conference table seating",
+        "Facilitator at front with projector"
+      ]
+    },
+    "injectTimeline": {
+      "0min": "Exercise begins - present scenario overview",
+      "30min": "Inject: SOC Alert - suspicious API calls detected",
+      "45min": "Inject: AWS credentials found on dark web forum",
+      "60min": "Inject: Attacker attempting to delete S3 buckets",
+      "90min": "Inject: Media inquiry about data breach",
+      "120min": "Exercise concludes - debrief"
+    }
+  },
+
+  "injects": [
+    {
+      "timing": "30 minutes",
+      "title": "Initial Detection",
+      "content": "SOC Alert: Unusual outbound API calls detected from our EC2 instance to unknown IPs. Customer reports suspicious activity in their account."
+    },
+    {
+      "timing": "45 minutes",
+      "title": "Credential Exposure Confirmed",
+      "content": "Threat intelligence reports our AWS keys being sold on dark web forums. Creds appear to be from EC2 metadata service."
+    },
+    {
+      "timing": "60 minutes",
+      "title": "Active Exfiltration",
+      "content": "CloudTrail shows large data transfers from our S3 buckets to unknown external IP. Attacker attempting destructive actions."
+    }
+  ],
+
+  "discussionQuestions": [
+    {
+      "id": 1,
+      "question": "What is the attack vector and how did the attacker discover it?",
+      "answer": "SSRF in /api/price endpoint using requests.get() without URL validation. Attacker scanned for open ports and found the vulnerable endpoint.",
+      "points": 10
+    },
+    {
+      "id": 2,
+      "question": "What data was potentially exposed through EC2 metadata?",
+      "answer": "AWS Access Key ID, Secret Access Key, Session Token, Instance ID, IAM Role name, Security Groups",
+      "points": 15
+    },
+    {
+      "id": 3,
+      "question": "What AWS services could the attacker access?",
+      "answer": "Any service the EC2 IAM role had access to: S3 (data), Lambda (code execution), RDS (databases), CloudWatch (logs), DynamoDB",
+      "points": 20
+    },
+    {
+      "id": 4,
+      "question": "What is the blast radius?",
+      "answer": "All resources the IAM role could access - primarily S3 buckets containing customer PII. Potential for data breach notification requirements.",
+      "points": 15
+    },
+    {
+      "id": 5,
+      "question": "How do we contain the incident?",
+      "answer": "1) Terminate compromised instance 2) Rotate ALL AWS credentials immediately 3) Revoke IAM role 4) Check for unauthorized API calls 5) Enable VPC Flow Logs if not already",
+      "points": 25
+    },
+    {
+      "id": 6,
+      "question": "What persistence mechanisms should we check for?",
+      "answer": "New IAM users/roles created by attacker, Lambda backdoor functions, CloudTrail disabled, SSM Run Command history, scheduled events",
+      "points": 15
+    }
+  ],
+
+  "technicalArtefacts": {
+    "vulnerableCode": "import requests\n\n@app.route('/api/price')\ndef get_price():\n    url = request.args.get('url')\n    # VULNERABLE - no validation!\n    response = requests.get(url)\n    return response.text",
+    "metadataAccess": "curl http://169.168.254.169/latest/meta-data/",
+    "credentialAccess": "curl http://169.168.254.169/latest/meta-data/iam/security-credentials/<role-name>",
+    "relevantLogs": ["CloudTrail", "VPC Flow Logs", "GuardDuty", "AWS Config", "S3 Access Logs"]
+  },
+
+  "preventiveMeasures": [
+    "Enable IMDSv2 on all EC2 instances (require token header)",
+    "Implement URL allowlist for outbound requests",
+    "Use VPC endpoints for AWS service access",
+    "Apply least privilege to IAM roles",
+    "Enable VPC Flow Logs",
+    "Deploy AWS GuardDuty",
+    "Regular penetration testing for SSRF"
+  ],
+
+  "references": [
+    {
+      "title": "AWS EC2 Metadata Service",
+      "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html"
+    },
+    {
+      "title": "OWASP SSRF",
+      "url": "https://owasp.org/www-community/attacks/Server_Side_Request_Forgery"
+    },
+    {
+      "title": "Capital One Breach Analysis",
+      "url": "https://krebsonsecurity.com/2019/08/capital-one-data-breach-occurred-after-waf-misconfiguration/"
+    }
+  ]
+}

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSRF Leads to AWS Compromise - Tabletop Exercise</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #9333ea; --primary-dark: #7c3aed; --danger: #dc2626; --warning: #f59e0b; --success: #10b981; --info: #3b82f6; --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb; --gray-300: #d1d5db; --gray-600: #4b5563; --gray-700: #374151; --gray-800: #1f2937; --gray-900: #111827; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; line-height: 1.6; color: var(--gray-900); background: var(--gray-50); }
+        .hero { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; padding: 3rem 2rem; text-align: center; }
+        .severity-badge { display: inline-block; padding: 0.5rem 1rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 600; text-transform: uppercase; margin-bottom: 1rem; background: var(--danger); }
+        h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem; }
+        .subtitle { font-size: 1.1rem; opacity: 0.9; margin-bottom: 1.5rem; }
+        .metadata-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; max-width: 800px; margin: 0 auto; }
+        .metadata-item { background: rgba(255,255,255,0.1); padding: 0.75rem; border-radius: 0.5rem; }
+        .metadata-label { font-size: 0.75rem; opacity: 0.8; }
+        .metadata-value { font-weight: 600; font-size: 1rem; }
+        .nav { position: sticky; top: 0; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 100; padding: 0.75rem 2rem; }
+        .nav-content { max-width: 1100px; margin: 0 auto; display: flex; gap: 1.5rem; overflow-x: auto; }
+        .nav-link { color: var(--gray-600); text-decoration: none; font-weight: 500; white-space: nowrap; padding: 0.4rem 0.8rem; font-size: 0.875rem; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+        .section { background: white; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .section-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid var(--gray-200); }
+        .section-number { font-size: 2rem; font-weight: 700; color: var(--primary); opacity: 0.3; }
+        .section-title { font-size: 1.5rem; font-weight: 700; }
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+        .info-card { background: var(--gray-50); padding: 1rem; border-radius: 0.5rem; border-left: 4px solid var(--primary); }
+        .info-card-title { font-weight: 600; color: var(--gray-600); margin-bottom: 0.25rem; font-size: 0.75rem; text-transform: uppercase; }
+        .info-card-value { font-size: 1rem; }
+        .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+        .stat-card { text-align: center; padding: 1rem; border-radius: 0.5rem; background: var(--gray-50); border: 2px solid var(--gray-200); }
+        .stat-card.critical { border-color: var(--danger); background: #fee; }
+        .stat-card.high { border-color: var(--warning); background: #fef3c7; }
+        .stat-number { font-size: 2rem; font-weight: 700; }
+        .stat-label { font-size: 0.75rem; color: var(--gray-600); text-transform: uppercase; }
+        .timeline { position: relative; padding-left: 2rem; }
+        .timeline::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--gray-200); }
+        .timeline-event { position: relative; margin-bottom: 1.5rem; padding-left: 2rem; }
+        .timeline-event::before { content: ''; position: absolute; left: -2rem; top: 0.4rem; width: 0.8rem; height: 0.8rem; border-radius: 50%; background: white; border: 3px solid var(--primary); }
+        .timeline-event.critical::before { border-color: var(--danger); }
+        .timeline-time { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--primary); font-size: 0.8rem; }
+        .timeline-title { font-weight: 600; margin-bottom: 0.25rem; }
+        .timeline-description { color: var(--gray-600); font-size: 0.9rem; }
+        .collapsible-card { background: white; border: 2px solid var(--gray-200); border-radius: 0.75rem; margin-bottom: 1rem; overflow: hidden; }
+        .collapsible-header { display: flex; align-items: center; padding: 1rem; cursor: pointer; background: var(--gray-50); }
+        .collapsible-header-content { display: flex; align-items: center; gap: 0.75rem; flex: 1; }
+        .collapsible-id { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--primary); font-weight: 600; }
+        .collapsible-time { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--gray-600); }
+        .collapsible-title { font-weight: 600; flex: 1; font-size: 0.95rem; }
+        .collapsible-card.open .collapsible-body { max-height: 10000px; }
+        .collapsible-body { max-height: 0; overflow: hidden; transition: max-height 0.4s; }
+        .collapsible-content { padding: 1.25rem; }
+        .code-block { background: var(--gray-900); color: #e5e7eb; padding: 1rem; border-radius: 0.5rem; margin: 0.75rem 0; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; overflow-x: auto; }
+        .code-block pre { margin: 0; white-space: pre-wrap; }
+        ul { margin-left: 1.25rem; margin-bottom: 0.75rem; }
+        li { margin-bottom: 0.35rem; }
+        .priority-badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 0.25rem; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
+        .priority-badge.critical { background: var(--danger); color: white; }
+        .priority-badge.high { background: var(--warning); color: var(--gray-900); }
+        .conditional-box { background: #eff6ff; border-left: 4px solid var(--info); padding: 0.75rem; border-radius: 0.375rem; margin: 0.75rem 0; }
+        .conditional-box strong { color: var(--primary); }
+        .facilitator-notes { background: #fffbeb; border: 2px solid var(--warning); border-radius: 0.5rem; padding: 1rem; margin-top: 1rem; }
+        .facilitator-notes-header { display: flex; align-items: center; gap: 0.5rem; color: var(--warning); font-weight: 700; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--warning); }
+        .facilitator-subsection { margin-bottom: 0.75rem; }
+        .facilitator-subsection h5 { font-size: 0.75rem; font-weight: 700; color: var(--gray-900); margin-bottom: 0.35rem; text-transform: uppercase; }
+        .time-badge { display: inline-block; background: var(--info); color: white; padding: 0.2rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; font-weight: 600; }
+        .hint-box { background: #e0f2fe; border-left: 4px solid var(--info); padding: 0.5rem; border-radius: 0.25rem; font-style: italic; margin: 0.35rem 0; font-size: 0.9rem; }
+        .eval-form { background: var(--gray-50); padding: 1.25rem; border-radius: 0.5rem; margin-bottom: 1.25rem; }
+        .eval-option { flex: 1; min-width: 150px; }
+        .eval-option label { display: flex; align-items: center; padding: 0.75rem; border: 2px solid var(--gray-300); border-radius: 0.5rem; cursor: pointer; transition: all 0.2s; background: white; font-size: 0.85rem; }
+        .eval-details { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 2px solid var(--gray-200); }
+        .eval-field { margin-bottom: 0.75rem; }
+        .eval-field label { display: block; font-weight: 600; margin-bottom: 0.35rem; color: var(--gray-700); font-size: 0.85rem; }
+        .eval-field input, .eval-field textarea, .eval-field select { width: 100%; padding: 0.5rem; border: 1px solid var(--gray-300); border-radius: 0.375rem; font-size: 0.85rem; }
+        .eval-field textarea { min-height: 60px; }
+        .eval-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+        .gap-card { background: white; border: 2px solid var(--gray-200); border-radius: 0.5rem; margin-bottom: 0.75rem; padding: 1rem; }
+        .gap-card.missing { border-color: var(--danger); background: #fef2f2; }
+        .gap-card.partial { border-color: var(--warning); background: #fffbeb; }
+        .gap-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+        .gap-title { font-weight: 600; font-size: 1rem; }
+        .gap-status { padding: 0.2rem 0.5rem; border-radius: 0.25rem; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
+        .gap-status.missing { background: var(--danger); color: white; }
+        .gap-status.partial { background: var(--warning); color: var(--gray-900); }
+        footer { background: var(--gray-900); color: white; padding: 1.5rem; text-align: center; margin-top: 3rem; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <header class="hero">
+        <span class="severity-badge">Critical Severity</span>
+        <h1>SSRF Leads to AWS Compromise</h1>
+        <p class="subtitle">Server-Side Request Forgery → EC2 Metadata → Credential Theft → Data Breach</p>
+        <div class="metadata-grid">
+            <div class="metadata-item"><div class="metadata-label">Type</div><div class="metadata-value">Technical - Cloud Security</div></div>
+            <div class="metadata-item"><div class="metadata-label">Duration</div><div class="metadata-value">2 Hours</div></div>
+            <div class="metadata-item"><div class="metadata-label">Difficulty</div><div class="metadata-value">Intermediate</div></div>
+            <div class="metadata-item"><div class="metadata-label">Version</div><div class="metadata-value">1.0</div></div>
+        </div>
+    </header>
+    <nav class="nav"><div class="nav-content">
+        <a href="#executive-summary" class="nav-link">Executive Summary</a>
+        <a href="#scenario" class="nav-link">Scenario</a>
+        <a href="#timeline" class="nav-link">Timeline</a>
+        <a href="#objectives" class="nav-link">Objectives</a>
+        <a href="#injects" class="nav-link">Injects</a>
+        <a href="#gaps" class="nav-link">Gap Analysis</a>
+    </div></nav>
+    <div class="container">
+        <section id="executive-summary" class="section">
+            <div class="section-header"><span class="section-number">01</span><h2 class="section-title">Executive Summary</h2></div>
+            <p style="margin-bottom:1rem;">This tabletop exercise simulates a critical security incident where a threat actor exploits a Server-Side Request Forgery (SSRF) vulnerability in the organization's e-commerce web application to access the AWS EC2 instance metadata service.</p>
+            <p style="margin-bottom:1rem;">The attacker successfully steals temporary IAM role credentials and uses them to access sensitive S3 buckets containing customer PII. The scenario tests the organization's ability to detect SSRF exploitation, respond to AWS credential compromise, contain the breach, and implement cloud security controls.</p>
+            <p>This is NOT a test of individual performance. The goal is to evaluate organizational procedures, identify gaps, and improve response capabilities.</p>
+        </section>
+        <section id="scenario" class="section">
+            <div class="section-header"><span class="section-number">02</span><h2 class="section-title">Scenario Overview</h2></div>
+            <p style="margin-bottom:1rem;">Your organization runs a Flask-based e-commerce platform on AWS EC2. The application includes a product price lookup feature that fetches pricing from external APIs. A developer recently introduced a feature that allows users to submit URLs for the application to fetch data from - but the implementation lacks any input validation.</p>
+            <p style="margin-bottom:1rem;">Your SOC is monitoring network traffic when an alert fires: unusual outbound HTTP requests from your production web server to IP address 169.254.169.254 - the AWS EC2 Instance Metadata Service. This is a reserved IP that should never be accessible from the internet, yet your server is making hundreds of requests to it.</p>
+            <p>Simultaneously, customer support receives reports that customers are receiving password reset emails they didn't request.</p>
+        </section>
+        <section id="timeline" class="section">
+            <div class="section-header"><span class="section-number">03</span><h2 class="section-title">Attack Chain Timeline</h2></div>
+            <div class="timeline">
+                <div class="timeline-event"><div class="timeline-time">T+0</div><div class="timeline-title">Initial Detection</div><div class="timeline-description">SOC alerts on unusual traffic to 169.254.169.254. 247 requests from production server.</div></div>
+                <div class="timeline-event critical"><div class="timeline-time">T+20</div><div class="timeline-title">Impact Assessment</div><div class="timeline-description">Credentials confirmed stolen. Attacker using Tor to access S3. 50GB customer data downloaded.</div></div>
+                <div class="timeline-event critical"><div class="timeline-time">T+40</div><div class="timeline-title">Persistence Detected</div><div class="timeline-description">Attacker creates IAM user and Lambda for persistence. Modifies legitimate Lambda.</div></div>
+                <div class="timeline-event"><div class="timeline-time">T+65</div><div class="timeline-title">Recovery</div><div class="timeline-description">Attacker evicted. Planning safe return to operations.</div></div>
+            </div>
+        </section>
+        <section id="objectives" class="section">
+            <div class="section-header"><span class="section-number">04</span><h2 class="section-title">Exercise Objectives</h2></div>
+            <div class="cards-grid">
+                <div class="info-card"><div class="info-card-title">OBJ-001</div><div class="info-card-value">Detect SSRF Attacks</div></div>
+                <div class="info-card"><div class="info-card-title">OBJ-002</div><div class="info-card-value">Respond to Credential Compromise</div></div>
+                <div class="info-card"><div class="info-card-title">OBJ-003</div><div class="info-card-value">Assess Data Breach Scope</div></div>
+                <div class="info-card"><div class="info-card-title">OBJ-004</div><div class="info-card-value">Eradicate Persistence</div></div>
+            </div>
+        </section>
+        <section id="injects" class="section">
+            <div class="section-header"><span class="section-number">05</span><h2 class="section-title">Exercise Injects</h2></div>
+            <!-- Inject 1 -->
+            <div class="collapsible-card">
+                <div class="collapsible-header" onclick="this.parentElement.classList.toggle('open')">
+                    <div class="collapsible-header-content">
+                        <span class="collapsible-id">SSRF-DETECT-001</span>
+                        <span class="collapsible-time">T+0</span>
+                        <span class="collapsible-title">Initial Detection</span>
+                        <span class="priority-badge high">high</span>
+                    </div>
+                </div>
+                <div class="collapsible-body">
+                    <div class="collapsible-content">
+                        <h4>Scenario</h4>
+                        <p style="margin:0.75rem 0;">Your SOC monitoring dashboard fires a high-severity alert: unusual outbound HTTP traffic to 169.254.169.254 (AWS EC2 Metadata). 247 requests from production web server over 30 minutes. Simultaneously, 12 customers report unauthorized password reset emails.</p>
+                        <h4>Artifact</h4>
+                        <div class="code-block"><pre>SECURITY ALERT - HIGH SEVERITY
+Alert: SSRF-001 - Suspicious Metadata Access
+Source: ec2-prod-web-01 (10.0.15.42)
+Destination: 169.254.169.254 (AWS Metadata)
+Request Count: 247 requests in 30 minutes
+
+Request Pattern:
+  /latest/meta-data/
+  /latest/meta-data/iam/
+  /latest/meta-data/iam/security-credentials/
+  /latest/meta-data/iam/security-credentials/ec2-prod-role
+
+Associated: 12 customer tickets - unauthorized password resets</pre></div>
+                        <h4>Expected Response</h4>
+                        <p style="margin:0.75rem 0;">Assign incident commander, isolate affected server, preserve evidence, begin forensic analysis, escalate to management, connect customer reports to attack.</p>
+                        <h4>Discussion Questions</h4>
+                        <ul><li>What does 169.254.169.254 represent?</li><li>What's our first action?</li><li>How do we preserve evidence?</li><li>What's the connection to password resets?</li></ul>
+                        <div class="conditional-box"><strong>If: What do logs show?</strong><br>Application logs reveal /api/price?url=http://169.254.169.254/... - attacker enumerated metadata 200+ times.</div>
+                        <div class="conditional-box"><strong>If: Customer password resets?</strong><br>Stolen IAM credentials access S3 with customer PII. Attacker using it for account takeover. Confirms successful breach.</div>
+                        <div class="facilitator-notes">
+                            <div class="facilitator-notes-header">🎯 FACILITATOR NOTES</div>
+                            <div class="facilitator-subsection"><h5>⏱️ Time</h5><span class="time-badge">15-20 min</span></div>
+                            <div class="facilitator-subsection"><h5>🔑 Key Points</h5><ul><li>169.254.169.254 = AWS metadata service</li><li>Customer reports = attack succeeded</li></ul></div>
+                            <div class="facilitator-subsection"><h5>🚩 Red Flags</h5><ul><li>No incident commander</li><li>Evidence not preserved</li></ul></div>
+                            <div class="facilitator-subsection"><h5>💡 Hints</h5><div class="hint-box">What does our SSRF playbook say first?</div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Inject 2 -->
+            <div class="collapsible-card">
+                <div class="collapsible-header" onclick="this.parentElement.classList.toggle('open')">
+                    <div class="collapsible-header-content">
+                        <span class="collapsible-id">SSRF-IMPACT-001</span>
+                        <span class="collapsible-time">T+20</span>
+                        <span class="collapsible-title">Impact Assessment</span>
+                        <span class="priority-badge critical">critical</span>
+                    </div>
+                </div>
+                <div class="collapsible-body">
+                    <div class="collapsible-content">
+                        <h4>Scenario</h4>
+                        <p style="margin:0.75rem 0;">Forensics confirm credentials stolen. Threat intel reports credentials on dark web. CloudTrail shows attacker used Tor IP to access S3. Downloaded 50GB / 500K customer records including PII.</p>
+                        <h4>Artifact</h4>
+                        <div class="code-block"><pre>FORENSIC ANALYSIS - CONFIRMED BREACH
+✓ Credentials stolen: ASIA...7M2H
+✓ Role: ec2-prod-role (S3FullAccess)
+✓ Data exfiltrated: 50GB / 500K records
+
+CloudTrail (from Tor IP 185.220.101.45):
+  s3:ListBuckets
+  s3:GetObject customer-data-prod/* (50GB)
+  s3:GetObject order-history-prod/*</pre></div>
+                        <h4>Expected Response</h4>
+                        <p style="margin:0.75rem 0;">Escalate to legal/management, begin breach notification, rotate all credentials, engage external forensics.</p>
+                        <div class="facilitator-notes">
+                            <div class="facilitator-notes-header">🎯 FACILITATOR NOTES</div>
+                            <div class="facilitator-subsection"><h5>⏱️ Time</h5><span class="time-badge">15-20 min</span></div>
+                            <div class="facilitator-subsection"><h5>🔑 Key Points</h5><ul><li>500K records = material breach</li><li>Regulatory notification required</li></ul></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Inject 3 -->
+            <div class="collapsible-card">
+                <div class="collapsible-header" onclick="this.parentElement.classList.toggle('open')">
+                    <div class="collapsible-header-content">
+                        <span class="collapsible-id">SSRF-CONTAIN-001</span>
+                        <span class="collapsible-time">T+40</span>
+                        <span class="collapsible-title">Containment - Persistence</span>
+                        <span class="priority-badge critical">critical</span>
+                    </div>
+                </div>
+                <div class="collapsible-body">
+                    <div class="collapsible-content">
+                        <h4>Scenario</h4>
+                        <p style="margin:0.75rem 0;">Attacker created IAM user 'aws-admin-backup' and Lambda 'data-sync-handler' for persistence. Modified legitimate Lambda 'order-processor' to exfiltrate new data. Attacker establishing backdoor.</p>
+                        <h4>Artifact</h4>
+                        <div class="code-block"><pre>CloudTrail - Persistence Detected:
++ Created IAM user: aws-admin-backup
++ Created Lambda: data-sync-handler (exfil code)
+~ Modified Lambda: order-processor (added data exfil)</pre></div>
+                        <h4>Expected Response</h4>
+                        <p style="margin:0.75rem 0;">Delete malicious resources, rotate credentials again, full audit of IAM/Lambda, preserve evidence before cleanup.</p>
+                        <div class="facilitator-notes">
+                            <div class="facilitator-notes-header">🎯 FACILITATOR NOTES</div>
+                            <div class="facilitator-subsection"><h5>⏱️ Time</h5><span class="time-badge">20-25 min</span></div>
+                            <div class="facilitator-subsection"><h5>🔑 Key Points</h5><ul><li>Speed vs evidence tradeoff</li><li>Full audit required</li></ul></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Inject 4 -->
+            <div class="collapsible-card">
+                <div class="collapsible-header" onclick="this.parentElement.classList.toggle('open')">
+                    <div class="collapsible-header-content">
+                        <span class="collapsible-id">SSRF-RECOVER-001</span>
+                        <span class="collapsible-time">T+65</span>
+                        <span class="collapsible-title">Recovery</span>
+                        <span class="priority-badge high">high</span>
+                    </div>
+                </div>
+                <div class="collapsible-body">
+                    <div class="collapsible-content">
+                        <h4>Scenario</h4>
+                        <p style="margin:0.75rem 0;">Attacker evicted. Credentials rotated. Need to plan safe return to operations. What monitoring prevents recurrence? What do we tell customers?</p>
+                        <h4>Discussion Questions</h4>
+                        <ul><li>How do we safely return to operations?</li><li>What monitoring catches this faster?</li><li>What do we tell customers?</li></ul>
+                        <div class="facilitator-notes">
+                            <div class="facilitator-notes-header">🎯 FACILITATOR NOTES</div>
+                            <div class="facilitator-subsection"><h5>⏱️ Time</h5><span class="time-badge">15-20 min</span></div>
+                            <div class="facilitator-subsection"><h5>🔑 Key Points</h5><ul><li>Enable IMDSv2</li><li>Customer notification</li><li>Root cause analysis</li></ul></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section id="gaps" class="section">
+            <div class="section-header"><span class="section-number">06</span><h2 class="section-title">SOP/Playbook Gap Analysis</h2></div>
+            <div class="stat-grid">
+                <div class="stat-card critical"><div class="stat-number">2</div><div class="stat-label">Critical</div></div>
+                <div class="stat-card high"><div class="stat-number">1</div><div class="stat-label">High</div></div>
+                <div class="stat-card"><div class="stat-number">1</div><div class="stat-label">Medium</div></div>
+            </div>
+            <!-- Gap 1 -->
+            <div class="eval-form">
+                <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;">
+                    <span class="priority-badge critical">CRITICAL</span>
+                    <h3 style="margin:0;flex:1;">SSRF Incident Response Playbook</h3>
+                </div>
+                <div style="margin-bottom:1rem;padding:0.75rem;background:white;border-radius:0.375rem;border-left:4px solid var(--primary);">
+                    <strong>Evaluation Trigger:</strong> Initial detection of SSRF attack targeting metadata service
+                </div>
+                <div style="display:flex;gap:1rem;margin-bottom:1rem;flex-wrap:wrap;">
+                    <div class="eval-option"><label><input type="radio" name="gap1" checked> ✅ Adequate</label></div>
+                    <div class="eval-option"><label><input type="radio" name="gap1"> ⚠️ Inadequate</label></div>
+                    <div class="eval-option"><label><input type="radio" name="gap1"> ❌ Missing</label></div>
+                </div>
+                <div class="eval-details">
+                    <h4>Required Procedures</h4>
+                    <ul><li>SSRF-specific detection and classification procedures</li><li>Incident command structure during SSRF incidents</li><li>Step-by-step containment (isolate, preserve evidence, investigate)</li><li>Escalation thresholds and decision trees</li><li>AWS credential rotation procedures</li></ul>
+                    <h4>Impact if Gap Remains</h4>
+                    <p style="background:#fef2f2;padding:0.75rem;border-radius:0.375rem;border-left:4px solid var(--danger);">Delayed response to SSRF attacks, confusion about roles, potential for credential theft to go undetected longer, regulatory penalties for slow breach notification</p>
+                    <h4>Recommendation</h4>
+                    <p style="background:#f0fdf4;padding:0.75rem;border-radius:0.375rem;border-left:4px solid var(--success);">Develop SSRF-specific incident response playbook including metadata service blocking procedures, automated detection rules, and credential rotation runbooks. Test quarterly through tabletop exercises.</p>
+                    <div class="eval-grid">
+                        <div class="eval-field"><label>Assigned Owner</label><input type="text" placeholder="Name or Team"></div>
+                        <div class="eval-field"><label>Due Date</label><input type="date"></div>
+                        <div class="eval-field"><label>Priority</label><select><option>Critical</option><option>High</option><option>Medium</option></select></div>
+                    </div>
+                    <div class="eval-field"><label>Notes</label><textarea placeholder="Findings, discussions, follow-up items..."></textarea></div>
+                </div>
+            </div>
+            <!-- Gap 2 -->
+            <div class="eval-form">
+                <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;">
+                    <span class="priority-badge critical">CRITICAL</span>
+                    <h3 style="margin:0;flex:1;">AWS Credential Rotation Procedure</h3>
+                </div>
+                <div style="margin-bottom:1rem;padding:0.75rem;background:white;border-radius:0.375rem;border-left:4px solid var(--primary);">
+                    <strong>Evaluation Trigger:</strong> Discovery of compromised AWS credentials
+                </div>
+                <div style="display:flex;gap:1rem;margin-bottom:1rem;flex-wrap:wrap;">
+                    <div class="eval-option"><label><input type="radio" name="gap2"> ✅ Adequate</label></div>
+                    <div class="eval-option"><label><input type="radio" name="gap2" checked> ⚠️ Inadequate</label></div>
+                    <div class="eval-option"><label><input type="radio" name="gap2"> ❌ Missing</label></div>
+                </div>
+                <div class="eval-details">
+                    <h4>Required Procedures</h4>
+                    <ul><li>Emergency credential rotation runbook</li><li>IAM role vs. user credential procedures</li><li>Automated credential rotation</li><li>Verification procedures post-rotation</li></ul>
+                    <h4>Recommendation</h4>
+                    <p style="background:#f0fdf4;padding:0.75rem;border-radius:0.375rem;border-left:4px solid var(--success);">Document emergency credential rotation steps, create runbook for IAM role vs. user credentials, implement automated rotation where possible.</p>
+                    <div class="eval-grid">
+                        <div class="eval-field"><label>Assigned Owner</label><input type="text" placeholder="Name or Team"></div>
+                        <div class="eval-field"><label>Due Date</label><input type="date"></div>
+                        <div class="eval-field"><label>Priority</label><select><option>Critical</option><option>High</option></select></div>
+                    </div>
+                </div>
+            </div>
+            <!-- Gap 3 -->
+            <div class="eval-form">
+                <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;">
+                    <span class="priority-badge high">HIGH</span>
+                    <h3 style="margin:0;flex:1;">EC2 IMDS Configuration Standards</h3>
+                </div>
+                <div style="margin-bottom:1rem;padding:0.75rem;background:white;border-radius:0.375rem;border-left:4px solid var(--primary);">
+                    <strong>Evaluation Trigger:</strong> Post-incident hardening review
+                </div>
+                <div style="display:flex;gap:1rem;margin-bottom:1rem;flex-wrap:wrap;">
+                    <div class="eval-option"><label><input type="radio" name="gap3"> ✅ Adequate</label></div>
+                    <div class="eval-option"><label><input type="radio" name="gap3"> ⚠️ Inadequate</label></div>
+                    <div class="eval-option"><label><input type="radio" name="gap3" checked> ❌ Missing</label></div>
+                </div>
+                <div class="eval-details">
+                    <h4>Required Procedures</h4>
+                    <ul><li>IMDSv2 enforcement on all new instances</li><li>Security group rules blocking 169.254.0.0/16</li><li>Instance profile least-privilege</li><li>Regular audit of metadata access</li></ul>
+                    <h4>Recommendation</h4>
+                    <p style="background:#f0fdf4;padding:0.75rem;border-radius:0.375rem;border-left:4px solid var(--success);">Enable IMDSv2 on all instances, implement security group egress rules blocking metadata IP ranges, apply least-privilege IAM roles.</p>
+                    <div class="eval-grid">
+                        <div class="eval-field"><label>Assigned Owner
