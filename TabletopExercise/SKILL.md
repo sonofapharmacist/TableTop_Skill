@@ -5,6 +5,57 @@ description: Comprehensive cybersecurity tabletop exercise design and facilitati
 
 # TabletopExercise Skill
 
+## Initial Setup Questions (ASK BEFORE GENERATING)
+
+Before generating any exercise, ask the user the following questions if they have not already been provided:
+
+> **"Who should the exercise be prepared by? (default: Arcanum Information Security)"**
+
+- Use the user's answer as the `preparedBy` value throughout the exercise and in the cover page metadata.
+- If the user skips or accepts the default, use `"Arcanum Information Security"`.
+
+> **"Include emoji icons in headings and labels? (default: No)"**
+
+- If yes, pass `--emoji` when running the generator (or set `includeEmoji: true` in the options object).
+- If no or skipped, omit `--emoji` (default behaviour).
+
+Ask both questions **once per session** — do not re-ask for subsequent exercises in the same conversation.
+
+---
+
+## Client Environment Scoping (ASK BEFORE DESIGNING A NEW EXERCISE)
+
+Before designing a tailored exercise, collect the following background from the user. These are research questions — **do not send this list to the client**. The goal is enough context to make the scenario realistic. Gaps in detection, backup, and identity should surface organically during the exercise, not be pre-disclosed.
+
+Ask only what hasn't already been provided in the user's brief.
+
+### Platforms
+- What critical platforms are in scope? (e.g. VMware ESXi, SAP, Active Directory, Azure AD, AWS, Veeam, specific SaaS)
+- On-prem, cloud-hosted, or hybrid?
+- Any OT/ICS systems that should be included or explicitly excluded?
+
+### Crown Jewels
+- What are the two or three systems whose loss would cause the most immediate business pain?
+- What data, if exfiltrated, would trigger regulatory or reputational consequences?
+
+### Regulatory Context
+- What compliance obligations apply? (GDPR, HIPAA, CCPA, FSMA, PCI-DSS, SOC 2, sector-specific)
+- Is the organization a subsidiary of a larger entity with its own notification requirements?
+- Are there any known upcoming audits or regulatory reviews that should inform the scenario?
+
+### Participants
+- Who will be in the room? (roles, not names — e.g. CISO, SOC lead, Legal, VP Ops)
+- Is this technical, executive, or hybrid audience?
+- Approximate headcount?
+
+### Constraints
+- Any scenarios, systems, or topics explicitly off-limits?
+- Is there an existing IR plan the exercise should reference or stress-test?
+
+Use the answers to inform the `scenarioOverview`, `attackVector`, `potentialImpact`, and `gapAnalysis` sections of the exercise. Do not include the raw answers verbatim in participant-facing materials.
+
+---
+
 ## Output Formats (ALWAYS GENERATE ALL THREE)
 
 When you complete a tabletop exercise, generate these three outputs:
@@ -16,20 +67,29 @@ When you complete a tabletop exercise, generate these three outputs:
 | **Participant HTML** | Clean version, no spoilers for attendees | `[Exercise]-participant.html` |
 
 ### Generator Location
+
+> **Path note:** All generator commands use `$SKILL_DIR` as the base path.
+> Determine it at runtime with:
+> ```bash
+> SKILL_DIR=$(dirname "$(realpath ~/.claude/skills/TabletopExercise/SKILL.md)")
+> # Result: ~/.claude/skills/TabletopExercise
+> ```
+> If the skill was installed elsewhere, this one variable is the only thing to update.
+
 ```
-~/.openclaw/workspace/skills/TabletopExercise/generators/
+$SKILL_DIR/generators/
 ```
 
 Run with:
 ```bash
-cd ~/.openclaw/workspace/skills/TabletopExercise/generators
+cd $SKILL_DIR/generators
 bun run generate-html.ts --input ../examples/[slug]/exercise-data.json --output ../examples/[slug]/
 ```
 
 ## Directory Structure
 
 ```
-TabletopExercise/
+$SKILL_DIR/
 ├── SKILL.md                 # This file
 ├── ATOMICS-LIBRARY.md       # Atomic scenarios
 ├── generators/              # TypeScript generators
@@ -52,25 +112,25 @@ TabletopExercise/
 
 ### Prerequisites
 ```bash
-cd ~/.openclaw/workspace/skills/TabletopExercise/generators
+cd $SKILL_DIR/generators
 bun install
 ```
 
 ### Generate HTML Files
 ```bash
-cd generators
+cd $SKILL_DIR/generators
 bun run generate-html.ts --input ../examples/[exercise]/exercise-data.json
 ```
 
 ### Generate PDF
 ```bash
-cd generators
+cd $SKILL_DIR/generators
 bun run generate-pdf.ts --input ../examples/[exercise]/[exercise]-facilitator.html
 ```
 
 ### Generate Both
 ```bash
-cd generators
+cd $SKILL_DIR/generators
 bun run generate-both.ts --exercise [exercise-name]
 ```
 
@@ -95,7 +155,7 @@ Each exercise MUST have this structure:
   "duration": "2 hours",
   "difficulty": "Intermediate",
   "severity": "CRITICAL",
-  "preparedBy": "Arcanum Information Security",
+  "preparedBy": "[Answer from Initial Setup Question — default: Arcanum Information Security]",
   "date": "February 27, 2026",
   "version": "1.0",
   "executiveSummary": "2-3 paragraph detailed summary...",
@@ -194,7 +254,7 @@ Each exercise MUST have this structure:
 5. **Attack Chain Timeline**: Visual timeline of events
 6. **Exercise Objectives**: List of objectives
 7. **Exercise Injects**: Collapsible cards with full facilitator notes
-8. **Technical Atomics**: For scenario runners
+8. **Technical Atomics**: For scenario runners — **FACILITATOR VERSION ONLY**
 9. **SOP/Playbook Gap Analysis**: Gap cards
 10. **Action Items Summary**: Table of findings
 
@@ -202,7 +262,7 @@ Each exercise MUST have this structure:
 
 ```html
 <div class="collapsible-card">
-  <div class="collapsible-header">
+  <div class="collapsible-header" onclick="this.parentElement.classList.toggle('open')">`
     <span class="collapsible-id">UNIQUE-ID-001</span>
     <span class="collapsible-time">T+0</span>
     <span class="collapsible-title">Title</span>
@@ -1122,10 +1182,11 @@ Subject: URGENT: Wire Transfer Needed
   - Recommendation textarea
   - **Fillable fields:** Owner, Due Date, Priority Adjustment, Notes
 
-### Section 8: Atomics (Technical Runbook)
+### Section 8: Atomics (Technical Runbook) — FACILITATOR VERSION ONLY
 - Table format
 - Columns: ID, Time, Category, Action
 - Each row is an atomic action for the runner
+- **DO NOT include in participant version** — reveals how the scenario is staged
 
 ### Section 9: Facilitator Guide (CONFIDENTIAL)
 - Badge: "🎯 FACILITATOR GUIDE - CONFIDENTIAL"
@@ -1156,13 +1217,13 @@ Contains only:
 - Objectives
 - Timeline
 - Injects (Scenario + Artifact + Discussion Questions ONLY)
-- Atomics
 
 EXCLUDED from participant:
 - Expected responses
 - Facilitator notes
 - Gap analysis forms
 - All guidance sections
+- Atomics (runner instructions — reveals how the scenario is staged)
 
 ---
 
@@ -1341,10 +1402,10 @@ Skill Output:
 
 If you need to update the PDF design or fix content:
 ```bash
-cd /root/.claude/skills/TabletopExercise/pdf-generator
+cd $SKILL_DIR/generators
 bun run generate-pdf.ts \
-  --data ../exercises/[slug]/exercise-data.json \
-  --output ../exercises/[slug]/Updated-Exercise.pdf
+  --data ../examples/[slug]/exercise-data.json \
+  --output ../examples/[slug]/Updated-Exercise.pdf
 ```
 
 ---

@@ -18,6 +18,35 @@ Enhanced from the original SOC Manager Table Top Designer, this PAI skill provid
 
 ---
 
+## Before You Start — Client Scoping
+
+Collect the following before designing a tailored exercise. These are background research questions — **do not send this list to the client**. Detection, backup, and identity gaps should surface organically during the exercise, not be pre-disclosed.
+
+**Platforms**
+- What critical platforms are in scope? (e.g. VMware ESXi, SAP, Active Directory, Azure AD, AWS, Veeam, specific SaaS)
+- On-prem, cloud-hosted, or hybrid?
+- Any OT/ICS systems to include or explicitly exclude?
+
+**Crown Jewels**
+- What are the two or three systems whose loss would cause the most immediate business pain?
+- What data, if exfiltrated, would trigger regulatory or reputational consequences?
+
+**Regulatory Context**
+- What compliance obligations apply? (GDPR, HIPAA, CCPA, FSMA, PCI-DSS, SOC 2, sector-specific)
+- Is the organization a subsidiary of a larger entity with its own notification requirements?
+- Any upcoming audits or regulatory reviews the scenario should reflect?
+
+**Participants**
+- Who will be in the room? (roles — e.g. CISO, SOC lead, Legal, VP Ops)
+- Technical, executive, or hybrid audience?
+- Approximate headcount?
+
+**Constraints**
+- Any scenarios, systems, or topics explicitly off-limits?
+- Is there an existing IR plan the exercise should reference or stress-test?
+
+---
+
 ## Quick Start
 
 ### For Exercise Designers

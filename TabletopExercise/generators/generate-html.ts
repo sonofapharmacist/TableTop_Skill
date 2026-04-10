@@ -8,8 +8,7 @@ function escapeHtml(unsafe: string | undefined): string {
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+        .replace(/"/g, '&quot;');
 }
 
 interface TabletopExerciseData {
@@ -136,7 +135,14 @@ interface TabletopExerciseData {
     }>;
 }
 
-export function generateStandaloneHTML(data: TabletopExerciseData): string {
+interface GenerateOptions {
+    isFacilitator?: boolean;
+    includeEmoji?: boolean;
+}
+
+export function generateStandaloneHTML(data: TabletopExerciseData, options: GenerateOptions = {}): string {
+    const { isFacilitator = true, includeEmoji = true } = options;
+    const e = (emoji: string) => includeEmoji ? emoji + ' ' : '';
     const severityClass = data.severity.toLowerCase();
 
     return `<!DOCTYPE html>
@@ -1044,7 +1050,7 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
     <nav class="nav">
         <div class="nav-content">
             <a href="#executive-summary" class="nav-link">Executive Summary</a>
-            ${data.facilitatorGuide ? '<a href="#facilitator-guide" class="nav-link" style="background: var(--warning); color: var(--gray-900); font-weight: 700;">🎯 Facilitator Guide</a>' : ''}
+            ${data.facilitatorGuide ? `<a href="#facilitator-guide" class="nav-link" style="background: var(--warning); color: var(--gray-900); font-weight: 700;">${e('🎯')}Facilitator Guide</a>` : ''}
             <a href="#timeline" class="nav-link">Attack Timeline</a>
             <a href="#objectives" class="nav-link">Objectives</a>
             <a href="#injects" class="nav-link">Injects</a>
@@ -1087,13 +1093,13 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
         <!-- Facilitator Guide -->
         ${data.facilitatorGuide ? `
         <section id="facilitator-guide" class="section facilitator-guide">
-            <span class="facilitator-badge">🎯 FACILITATOR GUIDE - CONFIDENTIAL</span>
+            <span class="facilitator-badge">${e('🎯')}FACILITATOR GUIDE - CONFIDENTIAL</span>
             <h2 style="font-size: 2rem; font-weight: 800; color: var(--gray-900); margin-bottom: 1.5rem;">How to Run This Exercise</h2>
             <p style="margin-bottom: 2rem; line-height: 1.8;">This guide provides everything you need to facilitate a successful tabletop exercise. Read through this section before the exercise day.</p>
 
             <!-- Preparation -->
             <div class="facilitator-section">
-                <h4>📋 Pre-Exercise Preparation</h4>
+                <h4>${e('📋')}Pre-Exercise Preparation</h4>
                 <p><strong>Timeline:</strong> ${escapeHtml(data.facilitatorGuide.preparation.timeline)}</p>
 
                 <div style="margin-top: 1rem;">
@@ -1120,7 +1126,7 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
 
             <!-- Opening Script -->
             <div class="facilitator-section">
-                <h4>🎤 Opening Script</h4>
+                <h4>${e('🎤')}Opening Script</h4>
                 <div class="script-box">
                     ${escapeHtml(data.facilitatorGuide.openingScript).split('\n\n').map(para => `<p style="margin-bottom: 1rem;">${escapeHtml(para)}</p>`).join('')}
                 </div>
@@ -1128,7 +1134,7 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
 
             <!-- Ground Rules -->
             <div class="facilitator-section">
-                <h4>⚖️ Ground Rules to Establish</h4>
+                <h4>${e('⚖️')}Ground Rules to Establish</h4>
                 <ul>
                     ${data.facilitatorGuide.groundRules.map(rule => `<li>${escapeHtml(rule)}</li>`).join('')}
                 </ul>
@@ -1136,7 +1142,7 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
 
             <!-- Flow Overview -->
             <div class="facilitator-section">
-                <h4>📊 Exercise Flow Overview</h4>
+                <h4>${e('📊')}Exercise Flow Overview</h4>
                 <p>${escapeHtml(data.facilitatorGuide.flowOverview)}</p>
 
                 <div style="margin-top: 1rem;">
@@ -1155,7 +1161,7 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
 
             <!-- Facilitation Best Practices -->
             <div class="facilitator-section">
-                <h4>💡 Facilitation Best Practices</h4>
+                <h4>${e('💡')}Facilitation Best Practices</h4>
                 <ul>
                     ${data.facilitatorGuide.facilitation.map(tip => `<li>${escapeHtml(tip)}</li>`).join('')}
                 </ul>
@@ -1163,7 +1169,7 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
 
             <!-- Closing Script -->
             <div class="facilitator-section">
-                <h4>🎬 Closing Script</h4>
+                <h4>${e('🎬')}Closing Script</h4>
                 <div class="script-box">
                     ${escapeHtml(data.facilitatorGuide.closingScript).split('\n\n').map(para => `<p style="margin-bottom: 1rem;">${escapeHtml(para)}</p>`).join('')}
                 </div>
@@ -1171,7 +1177,7 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
 
             <!-- Troubleshooting -->
             <div class="facilitator-section">
-                <h4>🔧 Troubleshooting Common Issues</h4>
+                <h4>${e('🔧')}Troubleshooting Common Issues</h4>
                 ${data.facilitatorGuide.troubleshooting.map(item => `
                     <div class="troubleshooting-item">
                         <div class="troubleshooting-issue">Issue: ${escapeHtml(item.issue)}</div>
@@ -1208,20 +1214,20 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
                             <strong>Impact:</strong> ${escapeHtml(event.impact)}
                         </div>` : ''}
 
-                        ${event.facilitatorNotes ? `
+                        ${event.facilitatorNotes && isFacilitator ? `
                             <div class="facilitator-notes">
                                 <div class="facilitator-notes-header">
-                                    🎯 FACILITATOR NOTES - CONFIDENTIAL
+                                    ${e('🎯')}FACILITATOR NOTES - CONFIDENTIAL
                                 </div>
 
                                 <div class="facilitator-subsection">
-                                    <h5>📋 Context for Facilitators</h5>
+                                    <h5>${e('📋')}Context for Facilitators</h5>
                                     <p>${escapeHtml(event.facilitatorNotes.context)}</p>
                                 </div>
 
                                 ${event.facilitatorNotes.discussionPrompts && event.facilitatorNotes.discussionPrompts.length > 0 ? `
                                     <div class="facilitator-subsection">
-                                        <h5>💬 Discussion Prompts</h5>
+                                        <h5>${e('💬')}Discussion Prompts</h5>
                                         <ul>
                                             ${event.facilitatorNotes.discussionPrompts.map(prompt => `<li>${escapeHtml(prompt)}</li>`).join('')}
                                         </ul>
@@ -1230,7 +1236,7 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
 
                                 ${event.facilitatorNotes.teachingPoints && event.facilitatorNotes.teachingPoints.length > 0 ? `
                                     <div class="facilitator-subsection">
-                                        <h5>📚 Key Teaching Points</h5>
+                                        <h5>${e('📚')}Key Teaching Points</h5>
                                         <ul>
                                             ${event.facilitatorNotes.teachingPoints.map(point => `<li>${escapeHtml(point)}</li>`).join('')}
                                         </ul>
@@ -1267,15 +1273,15 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
                         </div>
                     ` : ''}
 
-                    ${obj.facilitatorNotes ? `
+                    ${obj.facilitatorNotes && isFacilitator ? `
                         <div class="facilitator-notes">
                             <div class="facilitator-notes-header">
-                                🎯 FACILITATOR NOTES - CONFIDENTIAL
+                                ${e('🎯')}FACILITATOR NOTES - CONFIDENTIAL
                             </div>
 
                             ${obj.facilitatorNotes.focusAreas && obj.facilitatorNotes.focusAreas.length > 0 ? `
                                 <div class="facilitator-subsection">
-                                    <h5>🎯 Focus Areas for This Objective</h5>
+                                    <h5>${e('🎯')}Focus Areas for This Objective</h5>
                                     <ul>
                                         ${obj.facilitatorNotes.focusAreas.map(area => `<li>${escapeHtml(area)}</li>`).join('')}
                                     </ul>
@@ -1284,7 +1290,7 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
 
                             ${obj.facilitatorNotes.commonMistakes && obj.facilitatorNotes.commonMistakes.length > 0 ? `
                                 <div class="facilitator-subsection">
-                                    <h5>⚠️ Common Mistakes to Watch For</h5>
+                                    <h5>${e('⚠️')}Common Mistakes to Watch For</h5>
                                     <ul>
                                         ${obj.facilitatorNotes.commonMistakes.map(mistake => `<li style="color: var(--warning);">${escapeHtml(mistake)}</li>`).join('')}
                                     </ul>
@@ -1293,7 +1299,7 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
 
                             ${obj.facilitatorNotes.timeGuidance ? `
                                 <div class="facilitator-subsection">
-                                    <h5>⏱️ Time Guidance</h5>
+                                    <h5>${e('⏱️')}Time Guidance</h5>
                                     <p>${escapeHtml(obj.facilitatorNotes.timeGuidance)}</p>
                                 </div>
                             ` : ''}
@@ -1311,8 +1317,8 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
             </div>
 
             ${data.injects.map(inject => `
-                <div class="collapsible-card" onclick="this.classList.toggle('open')">
-                    <div class="collapsible-header">
+                <div class="collapsible-card">
+                    <div class="collapsible-header" onclick="this.parentElement.classList.toggle('open')">
                         <div class="collapsible-header-content">
                             <span class="collapsible-id">${escapeHtml(inject.id)}</span>
                             <span class="collapsible-time">${escapeHtml(inject.time)}</span>
@@ -1335,8 +1341,10 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
                                 </div>
                             ` : ''}
 
+                            ${isFacilitator ? `
                             <h4 style="margin-bottom: 0.5rem;">Expected Response</h4>
                             <p style="margin-bottom: 1.5rem; line-height: 1.8;">${escapeHtml(inject.expectedResponse)}</p>
+                            ` : ''}
 
                             ${inject.discussionQuestions && inject.discussionQuestions.length > 0 ? `
                                 <h4 style="margin-bottom: 0.5rem;">Discussion Questions</h4>
@@ -1355,47 +1363,47 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
                                 `).join('')}
                             ` : ''}
 
-                            ${inject.facilitatorNotes ? `
+                            ${inject.facilitatorNotes && isFacilitator ? `
                                 <div class="facilitator-notes">
                                     <div class="facilitator-notes-header">
-                                        🎯 FACILITATOR NOTES - CONFIDENTIAL
+                                        ${e('🎯')}FACILITATOR NOTES - CONFIDENTIAL
                                     </div>
 
                                     <div class="facilitator-subsection">
-                                        <h5>⏱️ Expected Time</h5>
+                                        <h5>${e('⏱️')}Expected Time</h5>
                                         <span class="time-badge">${escapeHtml(inject.facilitatorNotes.expectedTime)}</span>
                                     </div>
 
                                     <div class="facilitator-subsection">
-                                        <h5>🎬 Setup & Delivery</h5>
+                                        <h5>${e('🎬')}Setup & Delivery</h5>
                                         <p><strong>Setup:</strong> ${escapeHtml(inject.facilitatorNotes.setup)}</p>
                                         <p><strong>Delivery:</strong> ${escapeHtml(inject.facilitatorNotes.delivery)}</p>
                                         <p><strong>Transition:</strong> ${escapeHtml(inject.facilitatorNotes.transition)}</p>
                                     </div>
 
                                     <div class="facilitator-subsection">
-                                        <h5>🔑 Key Points to Emphasize</h5>
+                                        <h5>${e('🔑')}Key Points to Emphasize</h5>
                                         <ul>
                                             ${inject.facilitatorNotes.keyPoints.map(point => `<li>${escapeHtml(point)}</li>`).join('')}
                                         </ul>
                                     </div>
 
                                     <div class="facilitator-subsection">
-                                        <h5>🚩 Red Flags to Watch For</h5>
+                                        <h5>${e('🚩')}Red Flags to Watch For</h5>
                                         <ul>
                                             ${inject.facilitatorNotes.redFlags.map(flag => `<li style="color: var(--danger);">${escapeHtml(flag)}</li>`).join('')}
                                         </ul>
                                     </div>
 
                                     <div class="facilitator-subsection">
-                                        <h5>💡 Hints If Team Gets Stuck</h5>
+                                        <h5>${e('💡')}Hints If Team Gets Stuck</h5>
                                         ${inject.facilitatorNotes.hints.map(hint => `
                                             <div class="hint-box">${escapeHtml(hint)}</div>
                                         `).join('')}
                                     </div>
 
                                     <div class="facilitator-subsection">
-                                        <h5>✅ Success Indicators</h5>
+                                        <h5>${e('✅')}Success Indicators</h5>
                                         <ul>
                                             ${inject.facilitatorNotes.successIndicators.map(indicator => `<li style="color: var(--success);">${escapeHtml(indicator)}</li>`).join('')}
                                         </ul>
@@ -1417,8 +1425,8 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
                 </div>
 
                 ${data.atomics.map(atomic => `
-                    <div class="collapsible-card" onclick="this.classList.toggle('open')">
-                        <div class="collapsible-header">
+                    <div class="collapsible-card">
+                        <div class="collapsible-header" onclick="this.parentElement.classList.toggle('open')">
                             <div class="collapsible-header-content">
                                 <span class="collapsible-id">${escapeHtml(atomic.id)}</span>
                                 <span class="collapsible-time">${escapeHtml(atomic.time)}</span>
@@ -1453,22 +1461,22 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
                                     </ul>
                                 ` : ''}
 
-                                ${atomic.facilitatorNotes ? `
+                                ${atomic.facilitatorNotes && isFacilitator ? `
                                     <div class="facilitator-notes">
                                         <div class="facilitator-notes-header">
-                                            🎯 FACILITATOR NOTES - CONFIDENTIAL
+                                            ${e('🎯')}FACILITATOR NOTES - CONFIDENTIAL
                                         </div>
 
                                         ${atomic.facilitatorNotes.preparation ? `
                                             <div class="facilitator-subsection">
-                                                <h5>🛠️ Preparation</h5>
+                                                <h5>${e('🛠️')}Preparation</h5>
                                                 <p>${escapeHtml(atomic.facilitatorNotes.preparation)}</p>
                                             </div>
                                         ` : ''}
 
                                         ${atomic.facilitatorNotes.executionTips && atomic.facilitatorNotes.executionTips.length > 0 ? `
                                             <div class="facilitator-subsection">
-                                                <h5>✅ Execution Tips</h5>
+                                                <h5>${e('✅')}Execution Tips</h5>
                                                 <ul>
                                                     ${atomic.facilitatorNotes.executionTips.map(tip => `<li>${escapeHtml(tip)}</li>`).join('')}
                                                 </ul>
@@ -1477,7 +1485,7 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
 
                                         ${atomic.facilitatorNotes.troubleshooting ? `
                                             <div class="facilitator-subsection">
-                                                <h5>🔧 Troubleshooting</h5>
+                                                <h5>${e('🔧')}Troubleshooting</h5>
                                                 <p>${escapeHtml(atomic.facilitatorNotes.troubleshooting)}</p>
                                             </div>
                                         ` : ''}
@@ -1533,7 +1541,7 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
                             <input type="radio" id="gap-${index}-adequate" name="gap-${index}-status" value="adequate">
                             <label for="gap-${index}-adequate">
                                 <div>
-                                    <div style="font-weight: 600; color: var(--success); margin-bottom: 0.25rem;">✅ Adequate</div>
+                                    <div style="font-weight: 600; color: var(--success); margin-bottom: 0.25rem;">${e('✅')}Adequate</div>
                                     <div style="font-size: 0.875rem; color: var(--gray-600);">Procedures exist and are well-documented</div>
                                 </div>
                             </label>
@@ -1543,7 +1551,7 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
                             <input type="radio" id="gap-${index}-inadequate" name="gap-${index}-status" value="inadequate">
                             <label for="gap-${index}-inadequate">
                                 <div>
-                                    <div style="font-weight: 600; color: var(--warning); margin-bottom: 0.25rem;">⚠️ Inadequate</div>
+                                    <div style="font-weight: 600; color: var(--warning); margin-bottom: 0.25rem;">${e('⚠️')}Inadequate</div>
                                     <div style="font-size: 0.875rem; color: var(--gray-600);">Procedures exist but need improvement</div>
                                 </div>
                             </label>
@@ -1553,7 +1561,7 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
                             <input type="radio" id="gap-${index}-missing" name="gap-${index}-status" value="missing" checked>
                             <label for="gap-${index}-missing">
                                 <div>
-                                    <div style="font-weight: 600; color: var(--danger); margin-bottom: 0.25rem;">❌ Missing</div>
+                                    <div style="font-weight: 600; color: var(--danger); margin-bottom: 0.25rem;">${e('❌')}Missing</div>
                                     <div style="font-size: 0.875rem; color: var(--gray-600);">No procedures in place</div>
                                 </div>
                             </label>
@@ -1607,22 +1615,22 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
                             <textarea id="gap-${index}-notes" placeholder="Document findings, discussions, or follow-up items from the exercise..."></textarea>
                         </div>
 
-                        ${gap.facilitatorNotes ? `
+                        ${gap.facilitatorNotes && isFacilitator ? `
                             <div class="facilitator-notes" style="margin-top: 1.5rem;">
                                 <div class="facilitator-notes-header">
-                                    🎯 FACILITATOR NOTES - CONFIDENTIAL
+                                    ${e('🎯')}FACILITATOR NOTES - CONFIDENTIAL
                                 </div>
 
                                 ${gap.facilitatorNotes.evaluationGuidance ? `
                                     <div class="facilitator-subsection">
-                                        <h5>📊 Evaluation Guidance</h5>
+                                        <h5>${e('📊')}Evaluation Guidance</h5>
                                         <p>${escapeHtml(gap.facilitatorNotes.evaluationGuidance)}</p>
                                     </div>
                                 ` : ''}
 
                                 ${gap.facilitatorNotes.probeQuestions && gap.facilitatorNotes.probeQuestions.length > 0 ? `
                                     <div class="facilitator-subsection">
-                                        <h5>❓ Probe Questions</h5>
+                                        <h5>${e('❓')}Probe Questions</h5>
                                         <ul>
                                             ${gap.facilitatorNotes.probeQuestions.map(q => `<li>${escapeHtml(q)}</li>`).join('')}
                                         </ul>
@@ -1631,7 +1639,7 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
 
                                 ${gap.facilitatorNotes.maturityIndicators && gap.facilitatorNotes.maturityIndicators.length > 0 ? `
                                     <div class="facilitator-subsection">
-                                        <h5>📈 Maturity Indicators</h5>
+                                        <h5>${e('📈')}Maturity Indicators</h5>
                                         <ul>
                                             ${gap.facilitatorNotes.maturityIndicators.map(indicator => `<li>${escapeHtml(indicator)}</li>`).join('')}
                                         </ul>
@@ -1653,7 +1661,7 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
 
             <div id="summary-content">
                 <div class="empty-state">
-                    <div class="empty-state-icon">📋</div>
+                    <div class="empty-state-icon">${e('📋')}</div>
                     <p><strong>No action items yet</strong></p>
                     <p style="font-size: 0.875rem; margin-top: 0.5rem;">Fill out the gap evaluation forms above to populate this summary.</p>
                 </div>
@@ -1744,7 +1752,7 @@ export function generateStandaloneHTML(data: TabletopExerciseData): string {
             if (actionItems.length === 0) {
                 summaryContent.innerHTML = \`
                     <div class="empty-state">
-                        <div class="empty-state-icon">📋</div>
+                        <div class="empty-state-icon">${e('📋')}</div>
                         <p><strong>No action items yet</strong></p>
                         <p style="font-size: 0.875rem; margin-top: 0.5rem;">Fill out the gap evaluation forms above to populate this summary.</p>
                     </div>
